@@ -1,7 +1,7 @@
-import userModel from "../models/userModel.js"; // Or your correct user model path
+import userModel from "../models/userModel.js"; 
 import validator from "validator";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken"; // Assuming jwt is used for createToken
+import jwt from "jsonwebtoken"; 
 
 // Helper function to create token
 const createToken = (id) => {
@@ -24,7 +24,6 @@ const registerUser = async (req, res) => {
             return res.json({ success: false, message: "Please enter a valid email" });
         }
         
-        // Watch out: There is a small typo in your video screenshot (.lenght). Fixed here to .length!
         if (password.length < 8) {
             return res.json({ success: false, message: "Please enter a strong password" });
         }
@@ -51,12 +50,21 @@ const registerUser = async (req, res) => {
     }
 }
 
-// Route for user login
+// Route for user login (FIXED & COMPLETED)
 const loginUser = async (req, res) => {
     try {
-        // ... your login logic where isMatch is calculated ...
+        const { email, password } = req.body;
+
+        // 1. Check if the user exists in the database
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: "User does not exist" });
+        }
+
+        // 2. Compare the incoming plain password with the hashed password in DB
+        const isMatch = await bcrypt.compare(password, user.password);
         
-        // From your 4th screenshot:
+        // 3. If they match, issue a JWT token
         if (isMatch) {
             const token = createToken(user._id);
             res.json({ success: true, token });
@@ -73,13 +81,13 @@ const loginUser = async (req, res) => {
 // Route for admin login
 const adminLogin = async (req, res) => {
     try {
-        const {email, password} = req.body
+        const { email, password } = req.body;
 
-        if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
-            const token = jwt.sign(email+password,JWT_SECRET)
-            res.json({success:true, token})
-        }else{
-            res.json({success:false,message:"invalid credentials"})
+        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+            const token = jwt.sign(email + password, process.env.JWT_SECRET);
+            res.json({ success: true, token });
+        } else {
+            res.json({ success: false, message: "Invalid credentials" });
         }
 
     } catch (error) {

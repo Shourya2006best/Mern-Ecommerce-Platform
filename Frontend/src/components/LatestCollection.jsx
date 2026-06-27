@@ -28,8 +28,8 @@ const LatestCollection = () => {
                 {
                     prodvalue.map((item) => (
                         <Productitem 
-                            key={item.id} 
-                            id={item.id} 
+                            key={item._id} 
+                            _id={item._id} 
                             image={item.image} 
                             name={item.name} 
                             price={item.price} 

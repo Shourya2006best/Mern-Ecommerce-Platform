@@ -11,7 +11,7 @@ const BestSeller = () => {
     useEffect(() => {
         if (products && products.length > 0) {
             
-            const popularItems = products.filter((item) => item.bestSeller);
+            const popularItems = products.filter((item) => item.bestseller);
             setBestSellerProducts(popularItems.slice(0, 5));
         }
     }, [products]); 
@@ -31,8 +31,8 @@ const BestSeller = () => {
                 {
                     bestSellerProducts.map((item) => (
                         <Productitem 
-                            key={item.id} 
-                            id={item.id} 
+                            key={item._id} 
+                            _id={item._id} 
                             image={item.image} 
                             name={item.name} 
                             price={item.price} 

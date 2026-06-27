@@ -19,7 +19,7 @@ const Product = () => {
 
 
     const foundProduct = products.find(
-      (item) =>  String(item.id) === String(productid)
+      (item) =>  String(item._id) === String(productid)
     );
 
     if (foundProduct) {
@@ -101,7 +101,7 @@ const Product = () => {
 
         
           <button 
-            onClick={() => addToCart(productData.id, size)}
+            onClick={() => addToCart(productData._id, size)}
             className='bg-black text-white px-8 py-3 text-xs font-bold uppercase tracking-wider active:bg-gray-800 transition-colors rounded-sm hover:opacity-90'
           >
             ADD TO CART

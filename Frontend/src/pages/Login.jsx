@@ -1,38 +1,65 @@
-import React, { useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { ShopContext } from '../context/Shopcontext.jsx'; // Fixed case sensitivity
+import axios from 'axios'; // 1. Added missing axios import
+import { toast } from 'react-toastify'; // 1. Added missing toast import
 
 const Login = () => {
   const [currentState, setCurrentState] = useState('LOGIN'); 
-  
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (currentState === 'REGISTER') {
-      console.log("Registering user with:", { name, email, password });
-      
-    } else {
-      console.log("Logging in user with:", { email, password });
-    
+    try {
+      if (currentState === 'SIGN UP') {
+        const response = await axios.post(backendUrl + '/api/user/register', { name, email, password });
+        
+        if (response.data.success) {
+          setToken(response.data.token);
+          localStorage.setItem('token', response.data.token);
+          toast.success("Account created successfully!");
+        } else {
+          toast.error(response.data.message); // 2. Fixed variable reference from 'error' to 'response.data'
+        }
+        
+      } else {
+        const response = await axios.post(backendUrl + '/api/user/login', { email, password });
+        
+        if (response.data.success) {
+          setToken(response.data.token); // 3. Set the state token upon login
+          localStorage.setItem('token', response.data.token); // 3. Saved token locally on login
+          toast.success("Logged in successfully!");
+        } else {
+          toast.error(response.data.message);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
+  // 4. Added programmatic redirect hook once authenticated
+  useEffect(() => {
+    if (token) {
+      navigate('/');
+    }
+  }, [token]);
+
   return (
-    
     <form 
       onSubmit={handleSubmit} 
       className='flex flex-col items-center w-[90%] sm:max-w-md m-auto mt-24 gap-4 text-gray-800 bg-white p-8 rounded-md shadow-sm border border-gray-100'
     >
-      
       <div className='inline-flex items-center gap-2 mb-2 mt-4'>
         <p className='text-3xl font-serif tracking-wide text-gray-900'>{currentState}</p>
         <hr className='border-none h-[1.5px] w-8 bg-gray-800' />
       </div>
 
-   
       {currentState === 'LOGIN' ? null : (
         <input 
           type="text" 
@@ -62,7 +89,6 @@ const Login = () => {
         required
       />
 
-      
       <div className='w-full flex justify-between text-xs text-gray-500 mt-1 px-0.5'>
         <p className='cursor-pointer hover:text-black transition-colors'>Forgot your password?</p>
         
