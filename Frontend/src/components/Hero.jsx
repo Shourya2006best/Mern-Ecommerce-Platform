@@ -7,7 +7,7 @@ const heroData = [
     title: "Summer Collection 2026",
     subtitle: "Up to 50% off on all trending styles.",
     btnText: "Shop Now",
-    btnLink: "/shop",
+    btnLink: "/collection",
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1600&q=80"
   },
   {
@@ -15,7 +15,7 @@ const heroData = [
     title: "Elevate Your Look",
     subtitle: "Discover premium, classy clothes for every occasion.",
     btnText: "New Arrivals",
-    btnLink: "/new-arrivals",
+    btnLink: "/collection",
     image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1600&q=80"
   },
   {
@@ -23,7 +23,7 @@ const heroData = [
     title: "Trendy Fashion",
     subtitle: "baggy jeans and baggy t-shirt .",
     btnText: "Explore More",
-    btnLink: "/Trendy",
+    btnLink: "/collection",
     image: assets.hero2
   }
 ];

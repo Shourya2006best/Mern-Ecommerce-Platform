@@ -69,6 +69,8 @@ import contact_icon from './contact_img.png'
 import star_icon from './star_icon.png'
 import star_dull_icon from './star_dull_icon.png'
 import bin_icon from './bin_icon.png'
+import razorpay_logo from './Razorpay_logo.png'
+import stripe_logo from './stripe_logo.png'
 
 const currency = "$";
 const delivery_fee = 10.00;
@@ -94,7 +96,9 @@ export const assets = {
     currency,
     star_icon,
     star_dull_icon,
-    bin_icon
+    bin_icon,
+    razorpay_logo,
+    stripe_logo
 }
 
 

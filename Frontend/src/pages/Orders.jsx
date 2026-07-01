@@ -1,118 +1,79 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/Shopcontext';
 import Title from '../components/Title';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const Orders = () => {
-  const { products, currency, cartItems } = useContext(ShopContext);
+  const { backendUrl, token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([]);
 
-  useEffect(() => {
-    if (!products || products.length === 0) return;
+  const loadOrderData = async () => {
+    try {
+      if (!token) return;
 
-    const tempOrderData = [];
-
-    
-    for (const items in cartItems) {
-      for (const item in cartItems[items]) {
-        if (cartItems[items][item] > 0) {
-          const productInfo = products.find(
-            (product) => String(product._id) === String(items) || String(product.id) === String(items)
-          );
-          
-          if (productInfo) {
-            
-            tempOrderData.push({
-              ...productInfo,
-              size: item,
-              quantity: cartItems[items][item],
-              status: 'Ready to ship',
-              paymentMethod: 'COD',
-              date: new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              })
-            });
-          }
-        }
+      const response = await axios.post(backendUrl + '/api/order/userorders', {}, { headers: { token } });
+      if (response.data.success) {
+        let allOrdersItem = [];
+        response.data.orders.map((order) => {
+          order.items.map((item) => {
+            item['status'] = order.status;
+            item['payment'] = order.payment;
+            item['paymentMethod'] = order.paymentMethod;
+            item['date'] = order.date;
+            allOrdersItem.push(item);
+          });
+        });
+        setOrderData(allOrdersItem.reverse()); // Show newest orders first
       }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
     }
-    setOrderData(tempOrderData);
-  }, [cartItems, products]);
+  };
+
+  useEffect(() => {
+    loadOrderData();
+  }, [token]);
 
   return (
-    <div className='border-t pt-16 px-4 max-w-7xl mx-auto min-h-[70vh]'>
-      
-     
-      <div className='text-2xl mb-6'>
+    <div className='border-t pt-16 max-w-7xl mx-auto px-4 min-h-[70vh]'>
+      <div className='text-2xl'>
         <Title title1={'MY '} title2={'ORDERS'} />
       </div>
 
-     
-      <div className='flex flex-col gap-4'>
+      <div className='mt-8'>
         {orderData.length === 0 ? (
-          <p className='text-center text-gray-500 py-16 text-sm uppercase tracking-widest'>
-            You haven't placed any orders yet.
-          </p>
+          <p className='text-center text-gray-500 py-12 text-sm uppercase tracking-widest'>You have placed no orders yet</p>
         ) : (
           orderData.map((item, index) => (
-            <div 
-              key={index} 
-              className='py-6 border-t border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-6 text-gray-700'
-            >
-              
-            
-              <div className='flex items-start gap-6 text-sm'>
-                <img 
-                  className='w-16 sm:w-20 rounded border object-cover bg-gray-50' 
-                  src={item.image?.[0] || item.image} 
-                  alt={item.name} 
-                />
-                <div className='flex flex-col gap-1'>
-                  <p className='sm:text-base font-medium text-gray-900'>{item.name}</p>
-                  
-                 
-                  <div className='flex items-center gap-3 mt-1 text-xs text-gray-500 font-medium'>
-                    <p>{currency}{item.price}</p>
-                    <span>|</span>
+            <div key={index} className='py-4 border-t border-b text-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4 text-sm'>
+              <div className='flex items-start gap-6'>
+                <img className='w-16 sm:w-20 rounded border object-cover' src={item.image[0]} alt="" />
+                <div>
+                  <p className='sm:text-base font-medium text-gray-800'>{item.name}</p>
+                  <div className='flex items-center gap-3 mt-2 text-xs text-gray-600'>
+                    <p className='text-sm font-semibold text-gray-900'>{currency}{item.price}</p>
                     <p>Quantity: {item.quantity}</p>
-                    <span>|</span>
-                    <p className='px-1.5 py-0.5 border bg-slate-50 rounded-sm font-mono text-[11px]'>{item.size}</p>
+                    <p className='px-1.5 py-0.5 border bg-slate-50 font-mono rounded-sm'>Size: {item.size}</p>
                   </div>
-                  
-                  <p className='mt-2 text-xs text-gray-400'>
-                    Date: <span className='text-gray-600 font-medium'>{item.date}</span>
-                  </p>
-                  <p className='text-xs text-gray-400'>
-                    Payment: <span className='text-gray-600 font-medium'>{item.paymentMethod}</span>
-                  </p>
+                  <p className='mt-2 text-xs text-gray-500'>Date: <span className='text-gray-400 font-medium'>{new Date(item.date).toDateString()}</span></p>
+                  <p className='mt-1 text-xs text-gray-500'>Payment: <span className='text-gray-400 font-medium uppercase tracking-wider'>{item.paymentMethod} ({item.payment ? "Done" : "Pending"})</span></p>
                 </div>
               </div>
-
               
-              <div className='md:w-1/3 flex items-center justify-between md:justify-center gap-2 text-sm'>
-                <div className='flex items-center gap-2.5'>
-                  {/* Small animated pulse green indicator dot */}
-                  <span className='w-2 h-2 rounded-full bg-green-500 animate-pulse'></span>
-                  <p className='text-sm text-gray-700 font-medium'>{item.status}</p>
+              {/* Dynamic Status Tracking Indicators Layout Section */}
+              <div className='md:w-1/3 flex justify-between items-center'>
+                <div className='flex items-center gap-2'>
+                  <p className={`w-2 h-2 rounded-full ${item.status === 'Delivered' ? 'bg-green-500' : 'bg-orange-400'}`}></p>
+                  <p className='text-xs sm:text-sm font-medium tracking-wide'>{item.status}</p>
                 </div>
+                <button onClick={loadOrderData} className='border border-gray-200 shadow-sm px-4 py-2 text-xs font-semibold rounded-sm hover:bg-slate-50 transition-colors'>Track Order</button>
               </div>
-
-           
-              <div className='flex justify-between md:justify-end gap-4 items-center'>
-                <button 
-                  onClick={() => alert(`Tracking updates: Your package is currently "${item.status.toLowerCase()}".`)}
-                  className='border border-gray-300 px-4 py-2 text-xs font-semibold rounded-sm text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors tracking-wide'
-                >
-                  Track Order
-                </button>
-              </div>
-
             </div>
           ))
         )}
       </div>
-
     </div>
   );
 };

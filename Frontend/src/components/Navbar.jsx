@@ -107,8 +107,8 @@ const Navbar = () => {
             onClick={handleProfileClick} 
           />
           
-          {token && (
-            <div className='absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded shadow-lg py-2 z-50 hidden group-hover:block'>
+          {showDropdown && (
+            <div className='absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded shadow-lg py-2 z-50  group-hover:block'>
               <NavLink to="/profile" className='block px-4 py-2 text-gray-600 hover:bg-gray-100'>My Profile</NavLink>
               <NavLink to="/orders" className='block px-4 py-2 text-gray-600 hover:bg-gray-100'>My Orders</NavLink>
               <p onClick={handleLogout} className='block px-4 py-2 text-gray-600 hover:bg-gray-100 cursor-pointer'>Logout</p>
