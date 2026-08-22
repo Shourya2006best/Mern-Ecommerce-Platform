@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/Shopcontext'; // Explicitly changed to lowercase 'c'
 import Title from '../components/Title';
-import { assets } from '../assets/assets';
+import { assets } from '../assets/Assets';
 import CartTotal from '../components/CartTotal';
 
 const Cart = () => {
