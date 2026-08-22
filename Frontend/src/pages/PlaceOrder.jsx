@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import Title from '../components/Title';
 import CartTotal from '../components/CartTotal';
-import { assets } from '../assets/assets';
+import { assets } from '../assets/Assets';
 import { ShopContext } from '../context/Shopcontext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
