@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/Shopcontext';
 import Title from './Title';
-import ProductItem from './ProductItem'; 
+import Productitem from './Productitem'; 
 
 const RelatedProducts = ({ category, subCategory }) => {
   const { products } = useContext(ShopContext);
@@ -33,7 +33,7 @@ const RelatedProducts = ({ category, subCategory }) => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 gap-y-6 mt-8">
         {related.length > 0 ? (
           related.map((item) => (
-            <ProductItem
+            <Productitem
               key={item._id}
               _id={item._id}
               name={item.name}
