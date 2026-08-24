@@ -7,6 +7,7 @@ const Navbar = () => {
   const [showMenu, setShowMenu] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   
+  
   const { 
     setShowSearch, 
     showSearch, 
@@ -27,6 +28,7 @@ const Navbar = () => {
 
   const handleProfileClick = () => {
     if (token) {
+      
       setShowDropdown(!showDropdown)
     } else {
       navigate('/login')
@@ -117,14 +119,16 @@ const Navbar = () => {
         </div>
 
         {/* Cart Icon & Live Badge */}
+   
         <div>
-          <NavLink to="/cart" className="text-gray-600 relative hover:text-blue-500">
+          <NavLink to={token ? '/cart' : '/login'} className="text-gray-600 relative hover:text-blue-500">
             <img src={assets.cart_icon} alt="Cart Icon" className='w-6 h-6' />
             <span className='absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center'>
               {getCartCount()}
             </span>
           </NavLink>
         </div>
+   
         
         {/* Mobile Responsive Hamburger Side Drawer */}
         <div className='sm:hidden cursor-pointer relative'>

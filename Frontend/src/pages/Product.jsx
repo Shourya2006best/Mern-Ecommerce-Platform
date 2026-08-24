@@ -7,7 +7,7 @@ import RelatedProducts from '../components/RelatedProducts';
 
 const Product = () => {
   const { productid } = useParams();
-  const { products, currency, addToCart } = useContext(ShopContext);
+  const { products, currency, addToCart, token, navigate } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState('');
   const [size, setSize] = useState('');
@@ -101,7 +101,7 @@ const Product = () => {
 
         
           <button 
-            onClick={() => addToCart(productData._id, size)}
+            onClick={token ? () => addToCart(productData._id, size) : () => navigate('/login')}
             className='bg-black text-white px-8 py-3 text-xs font-bold uppercase tracking-wider active:bg-gray-800 transition-colors rounded-sm hover:opacity-90'
           >
             ADD TO CART

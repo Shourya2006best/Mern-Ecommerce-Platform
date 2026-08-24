@@ -10,7 +10,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
+  const { token, setToken, navigate, backendUrl,getUserCart } = useContext(ShopContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +31,7 @@ const Login = () => {
         
         if (response.data.success) {
           setToken(response.data.token); // 3. Set the state token upon login
+          getUserCart(response.data.token); // 4. Fetch user cart after login
           localStorage.setItem('token', response.data.token); // 3. Saved token locally on login
           toast.success("Logged in successfully!");
         } else {
