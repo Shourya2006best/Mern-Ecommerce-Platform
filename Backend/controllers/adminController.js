@@ -23,8 +23,8 @@ export const adminLogin = async (req, res) => {
 
         res.cookie("adminRefreshToken", adminrefreshToken, {
     httpOnly: true,
-    secure: false,
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000
 });
             res.status(200).json({ success: true, accessToken: adminaccessToken });
@@ -42,8 +42,8 @@ export const adminLogout = async (req, res) => {
 
     res.clearCookie("adminRefreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
     });
 
     return res.json({
