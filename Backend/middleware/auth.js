@@ -1,26 +1,59 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 const authUser = async (req, res, next) => {
     try {
-        // Extract token from request headers
-        const { token } = req.headers;
+   
+        const authHeader = req.headers.authorization;
 
-        if (!token) {
-            return res.json({ success: false, message: 'Not Authorized. Login Again.' });
+        if (!authHeader) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized. Login Again.",
+            });
         }
 
-        // Decode and verify the token
-        const token_decode = jwt.verify(token, process.env.JWT_SECRET || "secret_key");
+        const [scheme, token] = authHeader.split(" ");
+
+        if (scheme !== "Bearer" || !token) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid authorization format.",
+            });
+        }
+
         
-        // Attach the user ID to the request body for the next controller function
-        req.body.userId = token_decode.id;
-        
+        const decoded = jwt.verify(
+            token,
+            process.env.ACCESS_TOKEN_SECRET
+        );
+
+        req.userId = decoded.userId;
+
         next();
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.error("Auth middleware error:", error);
+
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({
+                success: false,
+                message: "Access token expired.",
+            });
+        }
+
+        if (error.name === "JsonWebTokenError") {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid access token.",
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Authentication failed.",
+        });
     }
-}
+};
 
 export default authUser;

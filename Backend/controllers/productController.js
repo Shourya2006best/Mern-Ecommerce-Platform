@@ -1,21 +1,20 @@
 import { v2 as cloudinary } from "cloudinary";
-import productModel from "../models/productModel.js"; // Adjust path to match your structure
+import productModel from "../models/productModel.js"; 
 
-// Function to add a product
 const addProduct = async (req, res) => {
     try {
         const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
 
-        // Extracting images safely from req.files matching your screenshots
+       
         const image1 = req.files.image1 && req.files.image1[0];
         const image2 = req.files.image2 && req.files.image2[0];
         const image3 = req.files.image3 && req.files.image3[0];
         const image4 = req.files.image4 && req.files.image4[0];
 
-        // Filter out undefined images
+        
         const images = [image1, image2, image3, image4].filter((item) => item !== undefined);
 
-        // Uploading images to Cloudinary concurrently
+     
         let imagesUrl = await Promise.all(
             images.map(async (item) => {
                 let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
@@ -23,7 +22,6 @@ const addProduct = async (req, res) => {
             })
         );
 
-        // Preparing data object according to database schema mapping
         const productData = {
             name,
             description,
@@ -38,7 +36,7 @@ const addProduct = async (req, res) => {
 
         console.log(productData);
 
-        // Instantiating and saving product record to MongoDB
+    
         const product = new productModel(productData);
         await product.save();
 
@@ -50,7 +48,7 @@ const addProduct = async (req, res) => {
     }
 };
 
-// Function for list product
+
 const listProducts = async (req, res) => {
     try {
         const products = await productModel.find({});
@@ -61,7 +59,7 @@ const listProducts = async (req, res) => {
     }
 };
 
-// Function for removing a product
+
 const removeProduct = async (req, res) => {
     try {
         await productModel.findByIdAndDelete(req.body.id);
@@ -72,7 +70,7 @@ const removeProduct = async (req, res) => {
     }
 };
 
-// Function for single product info placeholder
+
 const singleProduct = async (req, res) => {
     try {
         const { productId } = req.body;

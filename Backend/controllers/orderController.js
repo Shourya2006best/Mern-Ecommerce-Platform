@@ -1,25 +1,42 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import Stripe from "stripe";
-import razorpay from "razorpay";
+import Razorpay from "razorpay";
 import crypto from "crypto";
 
-// Gateway Initializations
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-const razorpayInstance = new razorpay({
+const stripe = new Stripe(
+    process.env.STRIPE_SECRET_KEY
+);
+
+const razorpayInstance = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Global Currency Settings (Match this with your gateway configurations)
-const currency = "usd"; 
-const deliveryCharge = 10; // Fixed delivery fee in your store currency
 
-// 1. Placing orders using Cash on Delivery (COD) Method
+const currency = "usd";
+const deliveryCharge = 10;
+
+
 const placeOrder = async (req, res) => {
     try {
-        const { userId, items, amount, address } = req.body;
+        const userId = req.userId;
+
+        const {
+            items,
+            amount,
+            address
+        } = req.body;
+
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized",
+            });
+        }
+
 
         const orderData = {
             userId,
@@ -28,28 +45,65 @@ const placeOrder = async (req, res) => {
             address,
             paymentMethod: "COD",
             payment: false,
-            date: Date.now()
+            date: Date.now(),
         };
 
-        const newOrder = new orderModel(orderData);
+
+        const newOrder =
+            new orderModel(orderData);
+
         await newOrder.save();
 
-        // Reset database cart upon successful order placement
-        await userModel.findByIdAndUpdate(userId, { cartData: {} });
+        await userModel.findByIdAndUpdate(
+            userId,
+            {
+                cartData: {}
+            }
+        );
 
-        res.json({ success: true, message: "Order Placed Successfully" });
+
+        return res.status(200).json({
+            success: true,
+            message: "Order Placed Successfully",
+        });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Place COD order error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-// 2. Placing orders using Stripe Method (Initializes checkout session)
+
+
 const placeOrderStripe = async (req, res) => {
     try {
-        const { userId, items, amount, address } = req.body;
-        const { origin } = req.headers; // Front-end base URL (e.g., http://localhost:5173)
+
+        const userId = req.userId;
+
+        const {
+            items,
+            amount,
+            address
+        } = req.body;
+
+        const { origin } = req.headers;
+
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized",
+            });
+        }
+
 
         const orderData = {
             userId,
@@ -58,186 +112,298 @@ const placeOrderStripe = async (req, res) => {
             address,
             paymentMethod: "Stripe",
             payment: false,
-            date: Date.now()
+            date: Date.now(),
         };
 
-        const newOrder = new orderModel(orderData);
+
+        const newOrder =
+            new orderModel(orderData);
+
         await newOrder.save();
 
-        // Map items structure to Stripe specifications
         const line_items = items.map((item) => ({
             price_data: {
                 currency: currency,
+
                 product_data: {
-                    name: `${item.name} (${item.size})`
+                    name: `${item.name} (${item.size})`,
                 },
-                unit_amount: item.price * 100 // Stripe accepts amount in cents
+
+                unit_amount:
+                    Math.round(
+                        Number(item.price) * 100
+                    ),
             },
-            quantity: item.quantity
+
+            quantity: item.quantity,
         }));
 
-        // Push delivery fee as a separate line item
         line_items.push({
             price_data: {
                 currency: currency,
+
                 product_data: {
-                    name: 'Delivery Charges'
+                    name: "Delivery Charges",
                 },
-                unit_amount: deliveryCharge * 100
+
+                unit_amount:
+                    Math.round(
+                        deliveryCharge * 100
+                    ),
             },
-            quantity: 1
+
+            quantity: 1,
         });
 
-        // Initialize Stripe Checkout Session
-        const session = await stripe.checkout.sessions.create({
-            success_url: `${origin}/verify?success=true&orderId=${newOrder._id}`,
-            cancel_url: `${origin}/verify?success=false&orderId=${newOrder._id}`,
-            line_items,
-            mode: 'payment',
-        });
 
-        res.json({ success: true, session_url: session.url });
+        const session =
+            await stripe.checkout.sessions.create({
+
+                success_url:
+                    `${origin}/verify?success=true&orderId=${newOrder._id}`,
+
+                cancel_url:
+                    `${origin}/verify?success=false&orderId=${newOrder._id}`,
+
+                line_items,
+
+                mode: "payment",
+            });
+
+
+        return res.status(200).json({
+            success: true,
+            session_url: session.url,
+        });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Stripe order error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-// 3. Verify Stripe Payment Status
+
 const verifyStripe = async (req, res) => {
     try {
-        const { orderId, success, userId } = req.body;
 
-        if (success === "true") {
-            // Update order payment status flag and clear client cart data cache
-            await orderModel.findByIdAndUpdate(orderId, { payment: true });
-            await userModel.findByIdAndUpdate(userId, { cartData: {} });
-            res.json({ success: true, message: "Payment Successful" });
-        } else {
-            // Remove incomplete authorization log from database cleanly
-            await orderModel.findByIdAndDelete(orderId);
-            res.json({ success: false, message: "Payment Failed" });
+        const {
+            orderId,
+            success
+        } = req.body;
+
+        const userId = req.userId;
+
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized",
+            });
         }
 
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-};
+        if (success === "true") {
 
-// 4. Placing orders using Razorpay Method (Initializes Order Object)
-const placeOrderRazorpay = async (req, res) => {
-    try {
-        const { userId, items, amount, address } = req.body;
+            const order =
+                await orderModel.findOne({
+                    _id: orderId,
+                    userId,
+                });
 
-        const orderData = {
-            userId,
-            items,
-            amount,
-            address,
-            paymentMethod: "Razorpay",
-            payment: false,
-            date: Date.now()
-        };
 
-        const newOrder = new orderModel(orderData);
-        await newOrder.save();
-
-        // Options configuration required by Razorpay API
-        const options = {
-            amount: amount * 100, // Razorpay processes amounts in subunits (paise/cents)
-            currency: currency.toUpperCase(),
-            receipt: newOrder._id.toString()
-        };
-
-        await razorpayInstance.orders.create(options, (error, order) => {
-            if (error) {
-                console.log(error);
-                return res.json({ success: false, message: error });
+            if (!order) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Order not found",
+                });
             }
-            res.json({ success: true, order });
+
+
+            await orderModel.findByIdAndUpdate(
+                orderId,
+                {
+                    payment: true
+                }
+            );
+
+
+            await userModel.findByIdAndUpdate(
+                userId,
+                {
+                    cartData: {}
+                }
+            );
+
+
+            return res.status(200).json({
+                success: true,
+                message: "Payment Successful",
+            });
+        }
+
+
+        await orderModel.findOneAndDelete({
+            _id: orderId,
+            userId,
+        });
+
+
+        return res.status(200).json({
+            success: false,
+            message: "Payment Failed",
         });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Stripe verification error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-// 5. Verify Razorpay Payment Signature
-const verifyRazorpay = async (req, res) => {
-    try {
-        const { userId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-        // Generate HMAC hex verification string following Razorpay security protocols
-        const sign = razorpay_order_id + "|" + razorpay_payment_id;
-        const expectedSign = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-            .update(sign.toString())
-            .digest("hex");
-
-        if (expectedSign === razorpay_signature) {
-            // Get the order data relative to Razorpay order mapping record
-            const orderInfo = await orderModel.findOne({ userId, paymentMethod: "Razorpay", payment: false }).sort({ date: -1 });
-            
-            if (orderInfo) {
-                await orderModel.findByIdAndUpdate(orderInfo._id, { payment: true });
-                await userModel.findByIdAndUpdate(userId, { cartData: {} });
-                return res.json({ success: true, message: "Payment Successful" });
-            }
-        }
-        
-        res.json({ success: false, message: "Payment Verification Failed" });
-
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-};
-
-// 6. Fetch All Orders (For Admin Dashboard View)
 const allOrders = async (req, res) => {
     try {
-        const orders = await orderModel.find({});
-        res.json({ success: true, orders });
+
+        const orders =
+            await orderModel.find({});
+
+
+        return res.status(200).json({
+            success: true,
+            orders,
+        });
+
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Get all orders error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-// 7. Fetch Specific User Orders (For Customer Profile View)
+
 const userOrders = async (req, res) => {
     try {
-        const { userId } = req.body;
-        const orders = await orderModel.find({ userId });
-        res.json({ success: true, orders });
+
+        const userId = req.userId;
+
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized",
+            });
+        }
+
+
+        const orders =
+            await orderModel.find({
+                userId
+            });
+
+
+        return res.status(200).json({
+            success: true,
+            orders,
+        });
+
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Get user orders error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-// 8. Update Order Status (From Admin Panel Select Dropdowns)
+
 const updateStatus = async (req, res) => {
     try {
-        const { orderId, status } = req.body;
-        await orderModel.findByIdAndUpdate(orderId, { status });
-        res.json({ success: true, message: "Status Updated Successfully" });
+
+        const {
+            orderId,
+            status
+        } = req.body;
+
+
+        if (!orderId || !status) {
+            return res.status(400).json({
+                success: false,
+                message: "Order ID and status are required",
+            });
+        }
+
+
+        const updatedOrder =
+            await orderModel.findByIdAndUpdate(
+                orderId,
+                {
+                    status
+                },
+                {
+                    new: true
+                }
+            );
+
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found",
+            });
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Status Updated Successfully",
+        });
+
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+
+        console.log(
+            "Update order status error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
-export { 
-    placeOrder, 
-    placeOrderStripe, 
+
+export {
+    placeOrder,
+    placeOrderStripe,
     verifyStripe,
-    placeOrderRazorpay, 
-    verifyRazorpay,
-    allOrders, 
-    userOrders, 
-    updateStatus 
+    allOrders,
+    userOrders,
+    updateStatus,
 };

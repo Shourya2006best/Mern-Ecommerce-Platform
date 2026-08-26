@@ -1,18 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/Shopcontext';
 import Title from '../components/Title';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../api/api.js'; 
 
 const Orders = () => {
-  const { backendUrl, token, currency } = useContext(ShopContext);
+  const { token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([]);
 
   const loadOrderData = async () => {
     try {
       if (!token) return;
 
-      const response = await axios.post(backendUrl + '/api/order/userorders', {}, { headers: { token } });
+      const response = await api.post('order/userorders', {});
       if (response.data.success) {
         let allOrdersItem = [];
         response.data.orders.map((order) => {
@@ -62,7 +62,7 @@ const Orders = () => {
                 </div>
               </div>
               
-              {/* Dynamic Status Tracking Indicators Layout Section */}
+          
               <div className='md:w-1/3 flex justify-between items-center'>
                 <div className='flex items-center gap-2'>
                   <p className={`w-2 h-2 rounded-full ${item.status === 'Delivered' ? 'bg-green-500' : 'bg-orange-400'}`}></p>

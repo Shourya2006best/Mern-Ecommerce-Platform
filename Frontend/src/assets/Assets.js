@@ -70,7 +70,7 @@ import star_icon from './star_icon.png'
 import star_dull_icon from './star_dull_icon.png'
 import bin_icon from './bin_icon.png'
 import razorpay_logo from './Razorpay_logo.png'
-import stripe_logo from './stripe_logo.png'
+import stripe_logo from './stripe4.png'
 
 const currency = "$";
 const delivery_fee = 10.00;

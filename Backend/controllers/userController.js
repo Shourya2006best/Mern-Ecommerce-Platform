@@ -2,24 +2,27 @@ import userModel from "../models/userModel.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"; 
+import {
+    generateAccessToken,
+    generateRefreshToken,
+} from "../utils/token.js";
 
-// Helper function to create token
+
 const createToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET || "secret_key");
 }
 
-// Route for user registration
+
 const registerUser = async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // checking user already exists or not
+    
         const exists = await userModel.findOne({ email });
         if (exists) {
             return res.json({ success: false, message: "User already exists" });
         }
 
-        // validating email format & strong password
         if (!validator.isEmail(email)) {
             return res.json({ success: false, message: "Please enter a valid email" });
         }
@@ -28,7 +31,7 @@ const registerUser = async (req, res) => {
             return res.json({ success: false, message: "Please enter a strong password" });
         }
 
-        // hashing user password
+   
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -40,60 +43,137 @@ const registerUser = async (req, res) => {
 
         const user = await newUser.save();
 
-        const token = createToken(user._id);
+        const accessToken = generateAccessToken(
+            user._id.toString()
+        );
 
-        res.json({ success: true, token });
+        const refreshToken = generateRefreshToken(
+            user._id.toString()
+        );
+
+        res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+});
+
+        res.status(200).json({ success: true, accessToken });
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 }
 
-// Route for user login (FIXED & COMPLETED)
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. Check if the user exists in the database
         const user = await userModel.findOne({ email });
         if (!user) {
-            return res.json({ success: false, message: "User does not exist" });
+            return res.status(404).json({ success: false, message: "User does not exist" });
         }
 
-        // 2. Compare the incoming plain password with the hashed password in DB
         const isMatch = await bcrypt.compare(password, user.password);
         
-        // 3. If they match, issue a JWT token
+       
         if (isMatch) {
-            const token = createToken(user._id);
-            res.json({ success: true, token });
+            
+        const accessToken = generateAccessToken(
+            user._id.toString()
+        );
+
+        const refreshToken = generateRefreshToken(
+            user._id.toString()
+        );
+
+        res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+});
+
+            res.status(200).json({ success: true, accessToken });
+
         } else {
-            res.json({ success: false, message: 'Invalid credentials' });
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
     } catch (error) {
         console.log(error);
-        res.json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 }
 
-// Route for admin login
-const adminLogin = async (req, res) => {
+const logoutUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
 
-        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = jwt.sign(email + password, process.env.JWT_SECRET);
-            res.json({ success: true, token });
-        } else {
-            res.json({ success: false, message: "Invalid credentials" });
-        }
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+        });
+
+        return res.json({
+            success: true,
+            message: "Logged out successfully",
+        });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
-    }
-}
 
-export { loginUser, registerUser, adminLogin };
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+const refreshAccessToken = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                message: "Refresh token missing",
+            });
+        }
+
+
+        const decoded = jwt.verify(
+            refreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
+        const user = await userModel.findById(decoded.userId);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "User no longer exists",
+            });
+        }
+
+        const newAccessToken = generateAccessToken(
+            user._id.toString()
+        );
+
+        return res.status(200).json({
+            accessToken: newAccessToken,
+        });
+
+    } catch (error) {
+        console.error("Refresh token error:", error);
+
+        return res.status(401).json({
+            message: "Invalid or expired refresh token",
+        });
+    }
+};
+
+
+
+export { loginUser, registerUser, logoutUser, refreshAccessToken };

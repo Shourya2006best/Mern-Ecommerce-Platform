@@ -3,12 +3,12 @@ import Title from '../components/Title';
 import CartTotal from '../components/CartTotal';
 import { assets } from '../assets/Assets';
 import { ShopContext } from '../context/Shopcontext';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../api/api.js'; 
 
 const PlaceOrder = () => {
   const [method, setMethod] = useState('cod');
-  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, products } = useContext(ShopContext);
+  const { navigate, cartItems, setCartItems, getCartAmount, delivery_fee, products } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -53,9 +53,9 @@ const PlaceOrder = () => {
       };
 
       switch (method) {
-        // Cash on Delivery checkout path mapping logic
+       
         case 'cod':
-          const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } });
+          const response = await api.post('order/place', orderData);
           if (response.data.success) {
             setCartItems({});
             toast.success(response.data.message);
@@ -66,21 +66,12 @@ const PlaceOrder = () => {
           break;
 
         case 'stripe':
-          const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, { headers: { token } });
+          const responseStripe = await api.post('order/stripe', orderData);
           if (responseStripe.data.success) {
             const { session_url } = responseStripe.data;
             window.location.replace(session_url);
           } else {
             toast.error(responseStripe.data.message);
-          }
-          break;
-
-        case 'razorpay':
-          const responseRazorpay = await axios.post(backendUrl + '/api/order/razorpay', orderData, { headers: { token } });
-          if (responseRazorpay.data.success) {
-            initRazorpay(responseRazorpay.data.order);
-          } else {
-            toast.error(responseRazorpay.data.message);
           }
           break;
 
@@ -94,43 +85,11 @@ const PlaceOrder = () => {
     }
   };
 
-  // Razorpay dynamic checkout interface configurations handler hook
-  const initRazorpay = (order) => {
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: order.amount,
-      currency: order.currency,
-      name: 'Forever E-Commerce',
-      description: 'Order Payment',
-      order_id: order.id,
-      handler: async (response) => {
-        try {
-          const verifyData = {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature
-          };
-          const verifyResponse = await axios.post(backendUrl + '/api/order/verifyRazorpay', verifyData, { headers: { token } });
-          if (verifyResponse.data.success) {
-            setCartItems({});
-            toast.success(verifyResponse.data.message);
-            navigate('/orders');
-          } else {
-            toast.error(verifyResponse.data.message);
-          }
-        } catch (error) {
-          console.log(error);
-          toast.error(error.message);
-        }
-      }
-    };
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  };
+  
 
   return (
     <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
-      {/* Left Hand Side Delivery Meta Blocks Structure */}
+      
       <div className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
         <div className='text-xl sm:text-2xl my-3'>
           <Title title1={'DELIVERY '} title2={'INFORMATION'} />
@@ -152,7 +111,7 @@ const PlaceOrder = () => {
         <input required onChange={onChangeHandler} name='phone' value={formData.phone} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' type="number" placeholder='Phone' />
       </div>
 
-      {/* Right Hand Side Payment Matrix Checkout Summary Layout */}
+      
       <div className='mt-8'>
         <div className='min-w-80'>
           <CartTotal />
@@ -164,10 +123,6 @@ const PlaceOrder = () => {
             <div onClick={() => setMethod('stripe')} className='flex items-center gap-3 border p-2 px-3 cursor-pointer'>
               <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'stripe' ? 'bg-green-400' : ''}`}></p>
               <img className='h-5 mx-4' src={assets.stripe_logo} alt="Stripe" />
-            </div>
-            <div onClick={() => setMethod('razorpay')} className='flex items-center gap-3 border p-2 px-3 cursor-pointer'>
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'razorpay' ? 'bg-green-400' : ''}`}></p>
-              <img className='h-5 mx-4' src={assets.razorpay_logo} alt="Razorpay" />
             </div>
             <div onClick={() => setMethod('cod')} className='flex items-center gap-3 border p-2 px-3 cursor-pointer'>
               <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'cod' ? 'bg-green-400' : ''}`}></p>

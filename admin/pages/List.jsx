@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { backendUrl, currency } from '../src/App'
+import { currency } from '../src/App'
 import { toast } from 'react-toastify'
+import api from "../api/api.js"
 
 const List = ({ token }) => {
   const [list, setList] = useState([])
 
   const fetchList = async () => {
     try {
-      const response = await axios.get(backendUrl + '/api/product/list');
+      const response = await api.get('/product/list');
       if (response.data.success) {
         setList(response.data.products);
       } else {
@@ -22,7 +22,7 @@ const List = ({ token }) => {
 
   const removeProduct = async (id) => {
     try {
-      const response = await axios.post(backendUrl + '/api/product/remove', { id }, { headers: { token } });
+      const response = await api.post('/product/remove', { id });
       if (response.data.success) {
         toast.success(response.data.message);
         await fetchList();

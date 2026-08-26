@@ -1,5 +1,4 @@
 import express from 'express';
-// Note: Added '.js' to the controller import to avoid the ES Modules "Cannot find module" error
 import { listProducts, addProduct, removeProduct, singleProduct } from '../controllers/productController.js';
 import upload from '../middleware/multer.js';
 import adminAuth from '../middleware/adminAuth.js';

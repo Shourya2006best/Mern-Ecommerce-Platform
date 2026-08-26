@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { assets } from '../assets/Assets' // Double check your folder case sensitivity (Assets vs assets)
-import { ShopContext } from '../context/Shopcontext' // Double check case sensitivity (ShopContext vs Shopcontext)
+import { assets } from '../assets/Assets' 
+import { ShopContext } from '../context/Shopcontext' 
 
 const Navbar = () => {
   const [showMenu, setShowMenu] = useState(false)
@@ -13,17 +13,13 @@ const Navbar = () => {
     showSearch, 
     getCartCount, 
     token, 
-    setToken, 
     navigate, 
-    setCartItems 
+    logout 
   } = useContext(ShopContext);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    setToken('')
-    setCartItems({})
-    setShowDropdown(false)
-    navigate('/login')
+  const handleLogout = async () => {
+      logout();
+      setShowDropdown(false); 
   }
 
   const handleProfileClick = () => {

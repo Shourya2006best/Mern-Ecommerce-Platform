@@ -1,5 +1,6 @@
 import express from "express";
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config'
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -7,16 +8,18 @@ import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRouter.js";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import adminRouter from "./routes/adminRoute.js";
 
 const app=express();
 const port = process.env.PORT || 4400
 connectDB();
 connectCloudinary();
 
-// 1. Regular body parser
-app.use(express.json());
 
-// 2. THIS WILL STOP NODEMON FROM CRASHING WHEN A BAD REQUEST IS SENT
+app.use(express.json());
+app.use(cookieParser());
+
+
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ 
@@ -26,12 +29,19 @@ app.use((err, req, res, next) => {
   }
   next();
 });
-app.use(cors());
+app.use(cors({
+    origin: [
+        "http://localhost:5173",
+        "http://localhost:5174"
+    ],
+    credentials: true
+}));
 
-app.use('/api/user',userRouter)
+app.use('/api/users',userRouter)
 app.use('/api/product',productRouter)
 app.use('/api/cart',cartRouter)
 app.use('/api/order', orderRouter);
+app.use('/api/admin', adminRouter);
 
 app.get('/',(req,res)=>{
     res.send("API working");

@@ -1,22 +1,57 @@
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
 
 const adminAuth = async (req, res, next) => {
     try {
-        const { token } = req.headers
-        if (!token) {
-            return res.json({ success: false, message: "Not Authorized Login Again" })
+
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized. Login Again.",
+            });
         }
-        
-        const token_decode = jwt.verify(token, process.env.JWT_SECRET);
-        if (token_decode !== process.env.ADMIN_EMAIL + process.env.ADMIN_PASSWORD) {
-            return res.json({ success: false, message: "Not Authorized Login Again" })
+
+        const [scheme, token] =
+            authHeader.split(" ");
+
+
+        if (
+            scheme !== "Bearer" ||
+            !token
+        ) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid authorization format.",
+            });
         }
-        
-        next()
+
+        const decoded = jwt.verify(
+            token,
+            process.env.ACCESS_TOKEN_SECRET
+        );
+
+        if (decoded.userId !== "admin") {
+            return res.status(403).json({
+                success: false,
+                message: "Admin access required.",
+            });
+        }
+
+        req.adminId = decoded.userId;
+
+
+        next();
+
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+
+        console.log("Admin Auth Error:", error);
+
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired admin access token.",
+        });
     }
-}
+};
 
 export default adminAuth;
