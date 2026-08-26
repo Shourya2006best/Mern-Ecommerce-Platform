@@ -32,7 +32,7 @@ app.use((err, req, res, next) => {
 app.use(cors({
     origin: [
       "https://admin-dashboard-nine-roan-90.vercel.app",
-      "https://frontend-dashboard-mocha-kappa.vercel.app",
+      "https://frontend-dashboard-gamma-ashy.vercel.app",
         "http://localhost:5173",
         "http://localhost:5174"
     ],
